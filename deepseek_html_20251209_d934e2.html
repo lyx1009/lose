@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线体重记录器</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background-color: #f7f9fc;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(106, 17, 203, 0.2);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .card h2 {
+            color: #2575fc;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+            font-size: 1.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #2575fc;
+            box-shadow: 0 0 0 3px rgba(37, 117, 252, 0.1);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(37, 117, 252, 0.2);
+        }
+        
+        .btn-delete {
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            padding: 8px 16px;
+            font-size: 14px;
+            width: auto;
+            margin-top: 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .weight-change {
+            font-weight: 600;
+        }
+        
+        .positive {
+            color: #28a745;
+        }
+        
+        .negative {
+            color: #dc3545;
+        }
+        
+        .no-change {
+            color: #6c757d;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            margin-top: 15px;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-box {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            flex: 1;
+            min-width: 180px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #2575fc;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .empty-message {
+            text-align: center;
+            color: #888;
+            padding: 40px 20px;
+            font-style: italic;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .card {
+                min-width: 100%;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .stats {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>在线体重记录器</h1>
+        <p class="subtitle">记录您的体重变化，追踪健康趋势，达成健康目标</p>
+    </header>
+    
+    <div class="container">
+        <div class="card">
+            <h2>记录新体重</h2>
+            <form id="weightForm">
+                <div class="form-group">
+                    <label for="weight">体重 (kg)</label>
+                    <input type="number" id="weight" step="0.1" min="10" max="300" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="date">日期</label>
+                    <input type="date" id="date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="time">时间</label>
+                    <select id="time">
+                        <option value="morning">早晨</option>
+                        <option value="noon">中午</option>
+                        <option value="evening">晚上</option>
+                        <option value="other">其他</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes">备注 (可选)</label>
+                    <input type="text" id="notes" placeholder="例如：运动后，餐前等">
+                </div>
+                
+                <button type="submit" class="btn">记录体重</button>
+            </form>
+            
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-label">当前记录数</div>
+                    <div class="stat-value" id="recordCount">0</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-label">平均体重</div>
+                    <div class="stat-value" id="avgWeight">0</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-label">最近变化</div>
+                    <div class="stat-value" id="lastChange">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>体重变化趋势</h2>
+            <div class="chart-container">
+                <canvas id="weightChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>历史记录</h2>
+        <div class="action-buttons">
+            <button class="btn btn-delete" id="clearAllBtn">清空所有记录</button>
+            <button class="btn btn-delete" id="exportBtn">导出数据</button>
+        </div>
+        <div id="recordsContainer">
+            <table id="recordsTable">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>时间</th>
+                        <th>体重 (kg)</th>
+                        <th>变化</th>
+                        <th>备注</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="recordsBody">
+                    <!-- 数据将在这里动态插入 -->
+                </tbody>
+            </table>
+            <div id="emptyMessage" class="empty-message">
+                暂无记录，请添加您的第一条体重记录。
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>© 2023 在线体重记录器 | 数据存储在您的浏览器本地，保护您的隐私</p>
+        <p>提示：定期记录体重有助于保持健康习惯</p>
+    </footer>
+
+    <script>
+        // 初始化变量
+        let weightRecords = [];
+        let weightChart = null;
+        
+        // DOM 元素
+        const weightForm = document.getElementById('weightForm');
+        const recordsBody = document.getElementById('recordsBody');
+        const emptyMessage = document.getElementById('emptyMessage');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const recordCount = document.getElementById('recordCount');
+        const avgWeight = document.getElementById('avgWeight');
+        const lastChange = document.getElementById('lastChange');
+        
+        // 初始化 - 设置日期为今天
+        document.getElementById('date').valueAsDate = new Date();
+        
+        // 从本地存储加载数据
+        function loadRecords() {
+            const saved = localStorage.getItem('weightRecords');
+            if (saved) {
+                weightRecords = JSON.parse(saved);
+                // 按日期排序（最新的在前）
+                weightRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+            }
+            updateDisplay();
+        }
+        
+        // 保存数据到本地存储
+        function saveRecords() {
+            localStorage.setItem('weightRecords', JSON.stringify(weightRecords));
+            updateDisplay();
+        }
+        
+        // 更新显示
+        function updateDisplay() {
+            // 更新表格
+            updateTable();
+            
+            // 更新图表
+            updateChart();
+            
+            // 更新统计信息
+            updateStats();
+            
+            // 显示/隐藏空状态消息
+            if (weightRecords.length === 0) {
+                emptyMessage.style.display = 'block';
+                document.getElementById('recordsTable').style.display = 'none';
+            } else {
+                emptyMessage.style.display = 'none';
+                document.getElementById('recordsTable').style.display = 'table';
+            }
+        }
+        
+        // 更新表格
+        function updateTable() {
+            recordsBody.innerHTML = '';
+            
+            // 按日期排序（最新的在前）用于表格显示
+            const sortedForTable = [...weightRecords].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            sortedForTable.forEach((record, index) => {
+                const row = document.createElement('tr');
+                
+                // 计算变化
+                let changeText = '';
+                let changeClass = 'no-change';
+                
+                if (index < sortedForTable.length - 1) {
+                    const prevWeight = sortedForTable[index + 1].weight;
+                    const change = record.weight - prevWeight;
+                    
+                    if (change > 0) {
+                        changeText = `+${change.toFixed(1)}`;
+                        changeClass = 'positive';
+                    } else if (change < 0) {
+                        changeText = `${change.toFixed(1)}`;
+                        changeClass = 'negative';
+                    } else {
+                        changeText = '0.0';
+                    }
+                }
+                
+                // 格式化日期
+                const dateObj = new Date(record.date);
+                const formattedDate = dateObj.toLocaleDateString('zh-CN');
+                
+                // 时间显示文本
+                const timeTextMap = {
+                    'morning': '早晨',
+                    'noon': '中午',
+                    'evening': '晚上',
+                    'other': '其他'
+                };
+                
+                row.innerHTML = `
+                    <td>${formattedDate}</td>
+                    <td>${timeTextMap[record.time]}</td>
+                    <td><strong>${record.weight.toFixed(1)}</strong></td>
+                    <td class="weight-change ${changeClass}">${changeText}</td>
+                    <td>${record.notes || '-'}</td>
+                    <td><button class="btn btn-delete delete-btn" data-id="${record.id}">删除</button></td>
+                `;
+                
+                recordsBody.appendChild(row);
+            });
+            
+            // 为删除按钮添加事件监听器
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    deleteRecord(id);
+                });
+            });
+        }
+        
+        // 更新图表
+        function updateChart() {
+            // 按日期排序（最老的在前）用于图表
+            const sortedForChart = [...weightRecords].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            const dates = sortedForChart.map(record => {
+                const date = new Date(record.date);
+                return `${date.getMonth()+1}/${date.getDate()}`;
+            });
+            
+            const weights = sortedForChart.map(record => record.weight);
+            
+            const ctx = document.getElementById('weightChart').getContext('2d');
+            
+            // 如果图表已存在，销毁它
+            if (weightChart) {
+                weightChart.destroy();
+            }
+            
+            // 创建新图表
+            weightChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: '体重 (kg)',
+                        data: weights,
+                        borderColor: '#2575fc',
+                        backgroundColor: 'rgba(37, 117, 252, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: '体重 (kg)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '日期'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 更新统计信息
+        function updateStats() {
+            // 记录数量
+            recordCount.textContent = weightRecords.length;
+            
+            // 平均体重
+            if (weightRecords.length > 0) {
+                const total = weightRecords.reduce((sum, record) => sum + record.weight, 0);
+                const average = total / weightRecords.length;
+                avgWeight.textContent = average.toFixed(1);
+                
+                // 最近变化
+                if (weightRecords.length >= 2) {
+                    const sorted = [...weightRecords].sort((a, b) => new Date(b.date) - new Date(a.date));
+                    const latest = sorted[0].weight;
+                    const previous = sorted[1].weight;
+                    const change = latest - previous;
+                    
+                    let changeText = change > 0 ? `+${change.toFixed(1)}` : `${change.toFixed(1)}`;
+                    lastChange.textContent = changeText;
+                    
+                    // 根据变化设置颜色
+                    if (change > 0) {
+                        lastChange.className = 'stat-value negative';
+                    } else if (change < 0) {
+                        lastChange.className = 'stat-value positive';
+                    } else {
+                        lastChange.className = 'stat-value';
+                    }
+                } else {
+                    lastChange.textContent = '0.0';
+                    lastChange.className = 'stat-value';
+                }
+            } else {
+                avgWeight.textContent = '0.0';
+                lastChange.textContent = '0.0';
+                lastChange.className = 'stat-value';
+            }
+        }
+        
+        // 添加新记录
+        function addRecord(weight, date, time, notes) {
+            const newRecord = {
+                id: Date.now().toString(),
+                weight: parseFloat(weight),
+                date: date,
+                time: time,
+                notes: notes,
+                createdAt: new Date().toISOString()
+            };
+            
+            weightRecords.push(newRecord);
+            saveRecords();
+            
+            // 重置表单
+            weightForm.reset();
+            document.getElementById('date').valueAsDate = new Date();
+        }
+        
+        // 删除记录
+        function deleteRecord(id) {
+            if (confirm('确定要删除这条记录吗？')) {
+                weightRecords = weightRecords.filter(record => record.id !== id);
+                saveRecords();
+            }
+        }
+        
+        // 清空所有记录
+        function clearAllRecords() {
+            if (weightRecords.length === 0) {
+                alert('当前没有记录可清空。');
+                return;
+            }
+            
+            if (confirm('确定要清空所有记录吗？此操作不可撤销。')) {
+                weightRecords = [];
+                saveRecords();
+                alert('所有记录已清空。');
+            }
+        }
+        
+        // 导出数据
+        function exportData() {
+            if (weightRecords.length === 0) {
+                alert('当前没有记录可导出。');
+                return;
+            }
+            
+            // 转换为CSV格式
+            const headers = ['日期', '时间', '体重(kg)', '备注'];
+            const csvRows = [headers.join(',')];
+            
+            // 按日期排序（最新的在前）
+            const sorted = [...weightRecords].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            sorted.forEach(record => {
+                const date = new Date(record.date).toLocaleDateString('zh-CN');
+                const timeTextMap = {
+                    'morning': '早晨',
+                    'noon': '中午',
+                    'evening': '晚上',
+                    'other': '其他'
+                };
+                const row = [
+                    date,
+                    timeTextMap[record.time],
+                    record.weight.toFixed(1),
+                    record.notes || ''
+                ];
+                csvRows.push(row.join(','));
+            });
+            
+            const csvString = csvRows.join('\n');
+            const blob = new Blob(['\ufeff' + csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `体重记录_${new Date().toLocaleDateString('zh-CN')}.csv`;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+        }
+        
+        // 事件监听器
+        weightForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const weight = document.getElementById('weight').value;
+            const date = document.getElementById('date').value;
+            const time = document.getElementById('time').value;
+            const notes = document.getElementById('notes').value;
+            
+            if (!weight || !date) {
+                alert('请填写体重和日期。');
+                return;
+            }
+            
+            addRecord(weight, date, time, notes);
+            alert('体重记录已添加！');
+        });
+        
+        clearAllBtn.addEventListener('click', clearAllRecords);
+        exportBtn.addEventListener('click', exportData);
+        
+        // 页面加载时加载数据
+        document.addEventListener('DOMContentLoaded', loadRecords);
+    </script>
+</body>
+</html>
