@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线体重记录器 | GitHub Pages版</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #2575fc;
+            --secondary: #6a11cb;
+            --success: #28a745;
+            --danger: #dc3545;
+            --light: #f8f9fa;
+            --dark: #343a40;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background-color: #f7f9fc;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 30px 20px;
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+            color: white;
+            border-radius: 15px;
+            box-shadow: 0 6px 20px rgba(106, 17, 203, 0.2);
+        }
+        
+        .github-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 15px;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(37, 117, 252, 0.2);
+        }
+        
+        .chart-container {
+            height: 300px;
+            width: 100%;
+        }
+        
+        /* GitHub Pages特有样式 */
+        .github-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #24292e;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            text-decoration: none;
+            z-index: 1000;
+        }
+        
+        .instructions {
+            background: #f0f7ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .github-link {
+                position: static;
+                display: block;
+                text-align: center;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- GitHub链接 -->
+    <a href="https://github.com" target="_blank" class="github-link">
+        ⭐ Star on GitHub
+    </a>
+    
+    <header>
+        <h1>🏋️ 在线体重记录器</h1>
+        <p>通过GitHub Pages部署的完全免费体重追踪工具</p>
+        <div class="github-badge">🚀 部署在GitHub Pages</div>
+    </header>
+    
+    <div class="instructions">
+        <h3>📖 使用说明</h3>
+        <p>✅ 数据存储在浏览器本地，保护隐私</p>
+        <p>✅ 响应式设计，手机电脑都能用</p>
+        <p>✅ 完全免费，无任何费用</p>
+        <p>🔗 分享链接: <span id="page-url">加载中...</span></p>
+    </div>
+    
+    <div class="container">
+        <!-- 左侧：记录表单 -->
+        <div class="card">
+            <h2>📝 记录体重</h2>
+            <form id="weightForm">
+                <div class="form-group">
+                    <label for="weight">体重 (kg)</label>
+                    <input type="number" id="weight" step="0.1" min="30" max="200" required placeholder="例如：65.5">
+                </div>
+                
+                <div class="form-group">
+                    <label for="date">日期</label>
+                    <input type="date" id="date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes">备注 (可选)</label>
+                    <input type="text" id="notes" placeholder="例如：晨起空腹，运动后">
+                </div>
+                
+                <button type="submit" class="btn">➕ 添加记录</button>
+            </form>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                <button onclick="exportData()" class="btn" style="background: var(--success);">📥 导出数据</button>
+                <button onclick="importData()" class="btn" style="background: #6c757d; margin-top: 10px;">📤 导入数据</button>
+                <button onclick="clearAll()" class="btn" style="background: var(--danger); margin-top: 10px;">🗑️ 清空数据</button>
+            </div>
+        </div>
+        
+        <!-- 右侧：图表 -->
+        <div class="card">
+            <h2>📊 体重趋势图</h2>
+            <div class="chart-container">
+                <canvas id="weightChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 统计信息 -->
+    <div class="container">
+        <div class="card">
+            <h2>📈 统计信息</h2>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center;">
+                <div class="stat-box">
+                    <div class="stat-label">记录总数</div>
+                    <div class="stat-value" id="totalRecords">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">平均体重</div>
+                    <div class="stat-value" id="avgWeight">0.0 kg</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">最近变化</div>
+                    <div class="stat-value" id="lastChange">0.0 kg</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>⚙️ GitHub Pages信息</h2>
+            <p>此网页部署在GitHub Pages上：</p>
+            <ul style="margin: 15px 0 15px 20px;">
+                <li>✅ 完全免费托管</li>
+                <li>✅ 支持自定义域名</li>
+                <li>✅ 自动HTTPS加密</li>
+                <li>✅ 全球CDN加速</li>
+            </ul>
+            <p style="font-size: 0.9rem; color: #666;">
+                想创建自己的版本？访问GitHub学习部署！
+            </p>
+        </div>
+    </div>
+    
+    <!-- 历史记录 -->
+    <div class="card">
+        <h2>📋 历史记录</h2>
+        <table id="recordsTable" style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 12px; text-align: left;">日期</th>
+                    <th style="padding: 12px; text-align: left;">体重 (kg)</th>
+                    <th style="padding: 12px; text-align: left;">变化</th>
+                    <th style="padding: 12px; text-align: left;">备注</th>
+                    <th style="padding: 12px; text-align: left;">操作</th>
+                </tr>
+            </thead>
+            <tbody id="recordsBody">
+                <!-- 记录将动态插入 -->
+            </tbody>
+        </table>
+        <div id="emptyMessage" style="text-align: center; padding: 40px; color: #888;">
+            📝 暂无记录，请添加您的第一条体重记录！
+        </div>
+    </div>
+    
+    <footer style="text-align: center; margin-top: 40px; padding: 20px; color: #666;">
+        <p>© 2023 在线体重记录器 | 部署于 <strong>GitHub Pages</strong> | 数据存储在本地浏览器</p>
+        <p style="font-size: 0.9rem; margin-top: 10px;">
+            想要部署自己的版本？访问 
+            <a href="https://github.com" target="_blank" style="color: var(--primary);">GitHub.com</a> 
+            了解更多
+        </p>
+    </footer>
+
+    <script>
+        // 显示当前页面URL
+        document.getElementById('page-url').textContent = window.location.href;
+        
+        // 从本地存储加载数据
+        function loadRecords() {
+            const saved = localStorage.getItem('weightRecords');
+            return saved ? JSON.parse(saved) : [];
+        }
+        
+        // 保存数据到本地存储
+        function saveRecords(records) {
+            localStorage.setItem('weightRecords', JSON.stringify(records));
+            updateDisplay();
+        }
+        
+        // 更新显示
+        function updateDisplay() {
+            const records = loadRecords();
+            
+            // 更新表格
+            updateTable(records);
+            
+            // 更新图表
+            updateChart(records);
+            
+            // 更新统计信息
+            updateStats(records);
+            
+            // 显示/隐藏空状态
+            document.getElementById('emptyMessage').style.display = 
+                records.length === 0 ? 'block' : 'none';
+        }
+        
+        // 更新表格
+        function updateTable(records) {
+            const tbody = document.getElementById('recordsBody');
+            tbody.innerHTML = '';
+            
+            // 按日期排序（最新的在前）
+            const sorted = [...records].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            sorted.forEach((record, index) => {
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid #eee';
+                
+                // 计算变化
+                let changeText = '─';
+                let changeClass = '';
+                
+                if (index < sorted.length - 1) {
+                    const prevWeight = sorted[index + 1].weight;
+                    const change = record.weight - prevWeight;
+                    
+                    if (change > 0) {
+                        changeText = `↑ +${change.toFixed(1)}`;
+                        changeClass = 'style="color: #dc3545;"';
+                    } else if (change < 0) {
+                        changeText = `↓ ${change.toFixed(1)}`;
+                        changeClass = 'style="color: #28a745;"';
+                    } else {
+                        changeText = '─ 0.0';
+                    }
+                }
+                
+                // 格式化日期
+                const dateObj = new Date(record.date);
+                const formattedDate = `${dateObj.getFullYear()}-${(dateObj.getMonth()+1).toString().padStart(2, '0')}-${dateObj.getDate().toString().padStart(2, '0')}`;
+                
+                row.innerHTML = `
+                    <td style="padding: 12px;">${formattedDate}</td>
+                    <td style="padding: 12px; font-weight: bold;">${record.weight.toFixed(1)} kg</td>
+                    <td style="padding: 12px;" ${changeClass}>${changeText}</td>
+                    <td style="padding: 12px;">${record.notes || '─'}</td>
+                    <td style="padding: 12px;">
+                        <button onclick="deleteRecord('${record.id}')" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+                            删除
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        // 更新图表
+        function updateChart(records) {
+            const ctx = document.getElementById('weightChart').getContext('2d');
+            
+            // 按日期排序（最老的在前）
+            const sorted = [...records].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // 如果已有图表，销毁它
+            if (window.weightChart) {
+                window.weightChart.destroy();
+            }
+            
+            if (sorted.length > 0) {
+                const dates = sorted.map(r => {
+                    const d = new Date(r.date);
+                    return `${d.getMonth()+1}/${d.getDate()}`;
+                });
+                
+                const weights = sorted.map(r => r.weight);
+                
+                window.weightChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: dates,
+                        datasets: [{
+                            label: '体重 (kg)',
+                            data: weights,
+                            borderColor: '#2575fc',
+                            backgroundColor: 'rgba(37, 117, 252, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                title: {
+                                    display: true,
+                                    text: '体重 (kg)'
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                // 清空图表区域
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.font = '16px Arial';
+                ctx.fillStyle = '#999';
+                ctx.textAlign = 'center';
+                ctx.fillText('暂无数据，请添加记录', ctx.canvas.width/2, ctx.canvas.height/2);
+            }
+        }
+        
+        // 更新统计信息
+        function updateStats(records) {
+            document.getElementById('totalRecords').textContent = records.length;
+            
+            if (records.length > 0) {
+                // 平均体重
+                const avg = records.reduce((sum, r) => sum + r.weight, 0) / records.length;
+                document.getElementById('avgWeight').textContent = avg.toFixed(1) + ' kg';
+                
+                // 最近变化
+                if (records.length >= 2) {
+                    const sorted = [...records].sort((a, b) => new Date(b.date) - new Date(a.date));
+                    const change = sorted[0].weight - sorted[1].weight;
+                    const changeText = change > 0 ? `+${change.toFixed(1)}` : change.toFixed(1);
+                    document.getElementById('lastChange').textContent = changeText + ' kg';
+                    document.getElementById('lastChange').style.color = change > 0 ? '#dc3545' : '#28a745';
+                } else {
+                    document.getElementById('lastChange').textContent = '0.0 kg';
+                }
+            } else {
+                document.getElementById('avgWeight').textContent = '0.0 kg';
+                document.getElementById('lastChange').textContent = '0.0 kg';
+            }
+        }
+        
+        // 添加记录
+        function addRecord(weight, date, notes) {
+            const records = loadRecords();
+            const newRecord = {
+                id: Date.now().toString(),
+                weight: parseFloat(weight),
+                date: date,
+                notes: notes,
+                timestamp: new Date().toISOString()
+            };
+            
+            records.push(newRecord);
+            saveRecords(records);
+            
+            // 显示成功提示
+            showMessage('✅ 记录添加成功！', 'success');
+        }
+        
+        // 删除记录
+        function deleteRecord(id) {
+            if (confirm('确定要删除这条记录吗？')) {
+                const records = loadRecords();
+                const newRecords = records.filter(r => r.id !== id);
+                saveRecords(newRecords);
+                showMessage('🗑️ 记录已删除', 'info');
+            }
+        }
+        
+        // 导出数据
+        function exportData() {
+            const records = loadRecords();
+            if (records.length === 0) {
+                alert('暂无数据可导出');
+                return;
+            }
+            
+            const csv = [
+                ['日期', '体重(kg)', '备注', '记录时间'].join(','),
+                ...records.map(r => [
+                    r.date,
+                    r.weight,
+                    r.notes || '',
+                    new Date(r.timestamp).toLocaleString()
+                ].join(','))
+            ].join('\n');
+            
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `体重记录_${new Date().toLocaleDateString()}.csv`;
+            link.click();
+            
+            showMessage('📥 数据导出成功！', 'success');
+        }
+        
+        // 导入数据
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv,.json';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    try {
+                        const content = event.target.result;
+                        let records;
+                        
+                        if (file.name.endsWith('.json')) {
+                            records = JSON.parse(content);
+                        } else {
+                            // CSV格式处理
+                            const lines = content.split('\n');
+                            const headers = lines[0].split(',');
+                            records = lines.slice(1)
+                                .filter(line => line.trim())
+                                .map(line => {
+                                    const values = line.split(',');
+                                    return {
+                                        id: Date.now() + Math.random(),
+                                        date: values[0],
+                                        weight: parseFloat(values[1]),
+                                        notes: values[2] || '',
+                                        timestamp: values[3] || new Date().toISOString()
+                                    };
+                                });
+                        }
+                        
+                        if (confirm(`将导入 ${records.length} 条记录，确定继续吗？`)) {
+                            const existing = loadRecords();
+                            const combined = [...existing, ...records];
+                            saveRecords(combined);
+                            showMessage(`✅ 成功导入 ${records.length} 条记录！`, 'success');
+                        }
+                    } catch (error) {
+                        alert('导入失败，请检查文件格式');
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+        
+        // 清空所有数据
+        function clearAll() {
+            if (confirm('⚠️ 确定要清空所有数据吗？此操作不可撤销！')) {
+                localStorage.removeItem('weightRecords');
+                updateDisplay();
+                showMessage('🗑️ 所有数据已清空', 'warning');
+            }
+        }
+        
+        // 显示消息提示
+        function showMessage(text, type) {
+            // 移除现有提示
+            const existing = document.querySelector('.message-toast');
+            if (existing) existing.remove();
+            
+            // 创建新提示
+            const toast = document.createElement('div');
+            toast.className = `message-toast`;
+            toast.textContent = text;
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                background: ${type === 'success' ? '#28a745' : type === 'warning' ? '#ffc107' : '#17a2b8'};
+                color: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // 3秒后自动移除
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // 添加CSS动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置今天为默认日期
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date').value = today;
+            
+            // 加载并显示数据
+            updateDisplay();
+            
+            // 表单提交事件
+            document.getElementById('weightForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const weight = document.getElementById('weight').value;
+                const date = document.getElementById('date').value;
+                const notes = document.getElementById('notes').value;
+                
+                if (!weight || !date) {
+                    alert('请填写体重和日期');
+                    return;
+                }
+                
+                addRecord(weight, date, notes);
+                
+                // 重置表单
+                this.reset();
+                document.getElementById('date').value = today;
+            });
+            
+            // 添加示例数据按钮（用于演示）
+            const demoBtn = document.createElement('button');
+            demoBtn.textContent = '加载示例数据（演示用）';
+            demoBtn.style.cssText = `
+                background: #6f42c1;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 6px;
+                cursor: pointer;
+                margin: 20px auto;
+                display: block;
+            `;
+            demoBtn.onclick = function() {
+                const today = new Date();
+                const dates = [
+                    today.toISOString().split('T')[0],
+                    new Date(today.setDate(today.getDate() - 1)).toISOString().split('T')[0],
+                    new Date(today.setDate(today.getDate() - 1)).toISOString().split('T')[0]
+                ];
+                
+                const sampleData = [
+                    { id: '1', weight: 68.5, date: dates[2], notes: '晨起空腹' },
+                    { id: '2', weight: 68.2, date: dates[1], notes: '运动后' },
+                    { id: '3', weight: 67.8, date: dates[0], notes: '早餐前' }
+                ];
+                
+                saveRecords(sampleData);
+                showMessage('✅ 示例数据加载成功！', 'success');
+            };
+            
+            document.querySelector('footer').parentNode.insertBefore(demoBtn, document.querySelector('footer'));
+        });
+    </script>
+</body>
+</html>
